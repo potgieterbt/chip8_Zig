@@ -3,7 +3,7 @@ const cpu = @import("cpu.zig");
 const fs = std.fs;
 const prs = std.process;
 
-const c = @cImport({
+const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
