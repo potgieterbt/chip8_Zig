@@ -24,13 +24,14 @@ pub const cpu = struct {
 
     const mem_start: u16 = 0x200;
     var memory: [4096]u8 = [_]u8{0} ** 4096;
-    var pc: u16 = 0;
-    sp: u8,
-    index_register: u16,
-    registers: [16]u8,
-    delay_timer: u8,
-    sound_timer: u8,
-    stack: [16]u16,
+    var pc: u16 = mem_start;
+    var sp: u8 = 0;
+    var index_register: u16 = 0;
+    var registers: [16]u8 = [_]u8{0} ** 16;
+    var delay_timer: u8 = 0;
+    var sound_timer: u8 = 0;
+    var stack: [16]u16 = [_]u16{0};
+    var clear_screen: bool = false;
 
     pub fn loadRom(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
         const file = try std.fs.cwd().openFile(path, .{});
@@ -50,15 +51,106 @@ pub const cpu = struct {
     }
 
     pub fn fetch() u16 {
-        return @shlExact(@intCast(u16, memory[Self.pc]), 8) | memory[Self.pc + 1];
+        const val: u16 = @shlExact(@as(u16, memory[Self.pc]), 8) | memory[Self.pc + 1];
+        Self.pc += 2;
+        return val;
     }
-    pub fn execture() void {}
-    pub fn tick() void {
-        const op = fetch();
-        std.debug.print("{}", .{op});
-    }
-    pub fn debug() void {}
 
-    fn decode() void {}
-    fn disassemble() void {}
+    pub fn execute(opcode: u16) !void {
+        switch (opcode & 0xF000) {
+            0x0000 => {
+                switch (opcode & 0xF) {
+                    0x0 => {
+                        Self.clear_screen = true;
+                    },
+                    0xE => {
+                        sp -= 1;
+                        pc = stack[sp];
+                    },
+                    else => return error.UnknownOpcode,
+                }
+            },
+            0x1000 => {
+                pc = (opcode & 0x0FFF);
+            },
+            0x2000 => {
+                stack[sp] = pc;
+                sp += 1;
+                pc = (opcode & 0x0FFF);
+            },
+            0x3000 => {
+                if (registers[(opcode & 0x00FF)] == registers[(opcode & 0x0F00)]) {
+                    pc += 2;
+                }
+            },
+            0x4000 => {
+                if (registers[(opcode & 0x00FF)] != registers[(opcode & 0x0F00)]) {
+                    pc += 2;
+                }
+            },
+            0x5000 => {
+                if (registers[(opcode & 0x00F0)] == registers[(opcode & 0x0F00)]) {
+                    pc += 2;
+                }
+            },
+            0x6000 => {
+                registers[(opcode & 0x0F00)] = (opcode & 0x00FF);
+            },
+            0x7000 => {
+                registers[(opcode & 0x0F00)] += (opcode & 0x00FF);
+            },
+            0x8000 => {
+                switch (opcode & 0xF) {
+                    0x1 => {},
+                    0x2 => {},
+                    0x3 => {},
+                    0x4 => {},
+                    0x5 => {},
+                    0x6 => {},
+                    0x7 => {},
+                    0xE => {},
+                    else => return error.UnknownOpcode,
+                }
+            },
+            0x9000 => {
+                if (registers[(opcode & 0x00F0)] != registers[(opcode & 0x0F00)]) {
+                    pc += 2;
+                }
+            },
+            0xA000 => {},
+            0xB000 => {},
+            0xC000 => {},
+            0xD000 => {},
+            0xE000 => {
+                switch (opcode & 0xFF) {
+                    0x9E => {},
+                    0xA1 => {},
+                    else => return error.UnknownOpcode,
+                }
+            },
+            0xF000 => {
+                switch (opcode & 0xFF) {
+                    0x07 => {},
+                    0x0A => {},
+                    0x15 => {},
+                    0x18 => {},
+                    0x1E => {},
+                    0x29 => {},
+                    0x33 => {},
+                    0x55 => {},
+                    0x65 => {},
+                    else => return error.UnknownOpcode,
+                }
+            },
+            else => return error.UnknownOpcode,
+        }
+    }
+    pub fn tick() void {
+        const op: u16 = fetch();
+        execute(op) catch |err| {
+            std.debug.panic("Opcode not recognised: {}", .{err});
+        };
+    }
+
+    pub fn debug() void {}
 };
