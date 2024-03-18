@@ -1,5 +1,5 @@
 const std = @import("std");
-const cpu = @import("cpu.zig");
+const cpuimp = @import("cpu.zig");
 const fs = std.fs;
 
 const sdl = @cImport({
@@ -7,15 +7,14 @@ const sdl = @cImport({
 });
 
 pub fn main() !void {
+    const cpu = cpuimp.cpu;
     const allocator = std.heap.page_allocator;
     const file_path = try parseArgumentsToFilePath();
 
-    const rom = try cpu.cpu.loadRom(allocator, file_path);
+    const rom = try cpu.loadRom(allocator, file_path);
     defer allocator.free(rom);
 
-    for (rom) |i| {
-        std.debug.print("{X}", .{i});
-    }
+    cpu.tick();
 }
 
 fn parseArgumentsToFilePath() ![]const u8 {

@@ -24,7 +24,7 @@ pub const cpu = struct {
 
     const mem_start: u16 = 0x200;
     var memory: [4096]u8 = [_]u8{0} ** 4096;
-    pc: u16,
+    var pc: u16 = 0;
     sp: u8,
     index_register: u16,
     registers: [16]u8,
@@ -32,7 +32,7 @@ pub const cpu = struct {
     sound_timer: u8,
     stack: [16]u16,
 
-    pub fn loadRom(allocator: std.mem.Allocator, path: []const u8) ![](u8) {
+    pub fn loadRom(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
         const file = try std.fs.cwd().openFile(path, .{});
         defer file.close();
 
@@ -49,9 +49,14 @@ pub const cpu = struct {
         return file_buffer;
     }
 
-    pub fn fetch() void {}
+    pub fn fetch() u16 {
+        return @shlExact(@intCast(u16, memory[Self.pc]), 8) | memory[Self.pc + 1];
+    }
     pub fn execture() void {}
-    pub fn tick() void {}
+    pub fn tick() void {
+        const op = fetch();
+        std.debug.print("{}", .{op});
+    }
     pub fn debug() void {}
 
     fn decode() void {}
