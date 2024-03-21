@@ -30,7 +30,7 @@ pub const cpu = struct {
     var registers: [16]u8 = [_]u8{0} ** 16;
     var delay_timer: u8 = 0;
     var sound_timer: u8 = 0;
-    var stack: [16]u16 = [_]u16{0};
+    var stack: [16]u16 = [_]u16{0} ** 16;
     var clear_screen: bool = false;
 
     pub fn loadRom(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
@@ -57,6 +57,11 @@ pub const cpu = struct {
     }
 
     pub fn execute(opcode: u16) !void {
+        std.debug.print("{X}\n", .{opcode});
+        std.debug.print("{X}\n", .{@as(u4, @truncate((opcode & 0xF000) >> 12))});
+        std.debug.print("{X}\n", .{@as(u4, @truncate((opcode & 0x0F00) >> 8))});
+        std.debug.print("{X}\n", .{@as(u4, @truncate((opcode & 0x00F0) >> 4))});
+        std.debug.print("{X}\n", .{opcode & 0x000F});
         switch (opcode & 0xF000) {
             0x0000 => {
                 switch (opcode & 0xF) {
@@ -84,7 +89,7 @@ pub const cpu = struct {
                 }
             },
             0x4000 => {
-                if (registers[(opcode & 0x00FF)] != registers[(opcode & 0x0F00)]) {
+                if (registers[@as(u4, @truncate(opcode & 0x00FF))] != registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))]) {
                     pc += 2;
                 }
             },
@@ -94,14 +99,22 @@ pub const cpu = struct {
                 }
             },
             0x6000 => {
-                registers[(opcode & 0x0F00)] = (opcode & 0x00FF);
+                registers[(opcode & 0x0F00)] = @as(u8, @truncate(opcode & 0x00FF));
             },
             0x7000 => {
-                registers[(opcode & 0x0F00)] += (opcode & 0x00FF);
+                const vx = @as(u4, @truncate(opcode & 0x0F00));
+                _ = (@addWithOverflow(registers[vx], @as(u8, @truncate(opcode & 0x00FF))));
+
+                registers[(opcode & 0x0F00)] += @truncate(opcode & 0x00FF);
             },
             0x8000 => {
                 switch (opcode & 0xF) {
-                    0x1 => {},
+                    0x0 => {
+                        registers[opcode & 0x0F00] = registers[opcode & 0x00F0];
+                    },
+                    0x1 => {
+                        registers[opcode & 0x0F00] |= registers[opcode & 0x00F0];
+                    },
                     0x2 => {},
                     0x3 => {},
                     0x4 => {},
