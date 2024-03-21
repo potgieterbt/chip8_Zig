@@ -14,7 +14,9 @@ pub fn main() !void {
     const rom = try cpu.loadRom(allocator, file_path);
     defer allocator.free(rom);
 
-    cpu.tick();
+    while (true) {
+        cpu.tick();
+    }
 }
 
 fn parseArgumentsToFilePath() ![]const u8 {

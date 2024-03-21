@@ -32,6 +32,7 @@ pub const cpu = struct {
     var sound_timer: u8 = 0;
     var stack: [16]u16 = [_]u16{0} ** 16;
     var clear_screen: bool = false;
+    var is_debug: bool = true;
 
     pub fn loadRom(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
         const file = try std.fs.cwd().openFile(path, .{});
@@ -57,11 +58,7 @@ pub const cpu = struct {
     }
 
     pub fn execute(opcode: u16) !void {
-        std.debug.print("{X}\n", .{opcode});
-        std.debug.print("{X}\n", .{@as(u4, @truncate((opcode & 0xF000) >> 12))});
-        std.debug.print("{X}\n", .{@as(u4, @truncate((opcode & 0x0F00) >> 8))});
-        std.debug.print("{X}\n", .{@as(u4, @truncate((opcode & 0x00F0) >> 4))});
-        std.debug.print("{X}\n", .{opcode & 0x000F});
+        // std.debug.print("{X}\n", .{opcode});
         switch (opcode & 0xF000) {
             0x0000 => {
                 switch (opcode & 0xF) {
@@ -160,10 +157,24 @@ pub const cpu = struct {
     }
     pub fn tick() void {
         const op: u16 = fetch();
-        execute(op) catch |err| {
-            std.debug.panic("Opcode not recognised: {}", .{err});
-        };
+        if (is_debug) {
+            debug(op) catch |err| {
+                std.debug.panic("Opcode not recognised: {}", .{err});
+            };
+        } else {
+            execute(op) catch |err| {
+                std.debug.panic("Opcode not recognised: {}", .{err});
+            };
+        }
     }
 
-    pub fn debug() void {}
+    pub fn debug(op: u16) !void {
+        std.debug.print("{X}\n", .{op});
+        for (registers) |reg| {
+            std.debug.print("{X}\n", .{reg});
+        }
+        try execute(op);
+        var buf: [1]u8 = [_]u8{0};
+        _ = try std.io.getStdIn().reader().readUntilDelimiter(&buf, '\n');
+    }
 };
