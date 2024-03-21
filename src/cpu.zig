@@ -81,7 +81,7 @@ pub const cpu = struct {
                 pc = (opcode & 0x0FFF);
             },
             0x3000 => {
-                if (registers[(opcode & 0x00FF)] == registers[(opcode & 0x0F00)]) {
+                if (registers[(opcode & 0x00FF)] == registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))]) {
                     pc += 2;
                 }
             },
@@ -91,29 +91,33 @@ pub const cpu = struct {
                 }
             },
             0x5000 => {
-                if (registers[(opcode & 0x00F0)] == registers[(opcode & 0x0F00)]) {
+                if (registers[@as(u4, @truncate((opcode & 0x00F0) >> 4))] == registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))]) {
                     pc += 2;
                 }
             },
             0x6000 => {
-                registers[(opcode & 0x0F00)] = @as(u8, @truncate(opcode & 0x00FF));
+                registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))] = @as(u8, @truncate(opcode & 0x00FF));
             },
             0x7000 => {
-                const vx = @as(u4, @truncate(opcode & 0x0F00));
+                const vx = @as(u4, @truncate((opcode & 0x0F00) >> 8));
                 _ = (@addWithOverflow(registers[vx], @as(u8, @truncate(opcode & 0x00FF))));
 
-                registers[(opcode & 0x0F00)] += @truncate(opcode & 0x00FF);
+                registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))] += @truncate(opcode & 0x00FF);
             },
             0x8000 => {
                 switch (opcode & 0xF) {
                     0x0 => {
-                        registers[opcode & 0x0F00] = registers[opcode & 0x00F0];
+                        registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))] = registers[@as(u4, @truncate((opcode & 0x00F0) >> 4))];
                     },
                     0x1 => {
-                        registers[opcode & 0x0F00] |= registers[opcode & 0x00F0];
+                        registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))] |= registers[@as(u4, @truncate((opcode & 0x00F0) >> 4))];
                     },
-                    0x2 => {},
-                    0x3 => {},
+                    0x2 => {
+                        registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))] &= registers[@as(u4, @truncate((opcode & 0x00F0) >> 4))];
+                    },
+                    0x3 => {
+                        registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))] ^= registers[@as(u4, @truncate((opcode & 0x00F0) >> 4))];
+                    },
                     0x4 => {},
                     0x5 => {},
                     0x6 => {},
@@ -170,10 +174,14 @@ pub const cpu = struct {
 
     pub fn debug(op: u16) !void {
         std.debug.print("{X}\n", .{op});
+        std.debug.print("{}\n", .{Self.pc});
         for (registers) |reg| {
             std.debug.print("{X}\n", .{reg});
         }
-        try execute(op);
+        // try execute(op);
+        execute(op) catch |err| {
+            std.debug.print("Opcode was not recognised {}\n", .{err});
+        };
         var buf: [1]u8 = [_]u8{0};
         _ = try std.io.getStdIn().reader().readUntilDelimiter(&buf, '\n');
     }
