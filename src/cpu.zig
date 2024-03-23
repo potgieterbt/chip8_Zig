@@ -52,7 +52,7 @@ pub const cpu = struct {
     }
 
     pub fn fetch() u16 {
-        const val: u16 = @shlExact(@as(u16, memory[Self.pc]), 8) | memory[Self.pc + 1];
+        const val: u16 = (@as(u16, memory[Self.pc]) << 8) | memory[Self.pc + 1];
         Self.pc += 2;
         return val;
     }
@@ -160,6 +160,7 @@ pub const cpu = struct {
         }
     }
     pub fn tick() void {
+        std.debug.print("{}\n", .{Self.pc});
         const op: u16 = fetch();
         if (is_debug) {
             debug(op) catch |err| {
@@ -174,7 +175,6 @@ pub const cpu = struct {
 
     pub fn debug(op: u16) !void {
         std.debug.print("{X}\n", .{op});
-        std.debug.print("{}\n", .{Self.pc});
         for (registers) |reg| {
             std.debug.print("{X}\n", .{reg});
         }
