@@ -85,7 +85,7 @@ pub const cpu = struct {
                 pc = (opcode & 0x0FFF);
             },
             0x3000 => {
-                if (registers[(opcode & 0x00FF)] == registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))]) {
+                if (registers[@as(u4, @truncate((opcode & 0x00FF) >> 8))] == registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))]) {
                     pc += 2;
                 }
             },
@@ -122,7 +122,14 @@ pub const cpu = struct {
                     0x3 => {
                         registers[@as(u4, @truncate((opcode & 0x0F00) >> 8))] ^= registers[@as(u4, @truncate((opcode & 0x00F0) >> 4))];
                     },
-                    0x4 => {},
+                    0x4 => {
+                        const vx = @as(u4, @truncate((opcode & 0x0F00) >> 8));
+                        const vy = @as(u4, @truncate((opcode & 0x00F0) >> 4));
+                        const res = (@addWithOverflow(registers[vx], registers[vy]));
+                        if (res[1] == 1) {
+                            registers[0xF] = 1;
+                        }
+                    },
                     0x5 => {},
                     0x6 => {},
                     0x7 => {},
