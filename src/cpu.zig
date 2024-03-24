@@ -45,13 +45,17 @@ pub const cpu = struct {
         const n = try file.readAll(file_buffer);
 
         for (file_buffer, 0..n) |op, i| {
-            cpu.memory[mem_start + i - 1] = op;
+            cpu.memory[mem_start + i] = op;
         }
 
         return file_buffer;
     }
 
     pub fn fetch() u16 {
+        std.debug.print("{X}\n", .{pc});
+        std.debug.print("{X}\n", .{pc + 1});
+        std.debug.print("{X}\n", .{memory[Self.pc]});
+        std.debug.print("{X}\n", .{memory[Self.pc + 1]});
         const val: u16 = (@as(u16, memory[Self.pc]) << 8) | memory[Self.pc + 1];
         Self.pc += 2;
         return val;
@@ -182,7 +186,7 @@ pub const cpu = struct {
         execute(op) catch |err| {
             std.debug.print("Opcode was not recognised {}\n", .{err});
         };
-        var buf: [1]u8 = [_]u8{0};
+        var buf: [8]u8 = [_]u8{0} ** 8;
         _ = try std.io.getStdIn().reader().readUntilDelimiter(&buf, '\n');
     }
 };
