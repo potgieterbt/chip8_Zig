@@ -130,10 +130,50 @@ pub const cpu = struct {
                             registers[0xF] = 1;
                         }
                     },
-                    0x5 => {},
-                    0x6 => {},
-                    0x7 => {},
-                    0xE => {},
+                    0x5 => {
+                        const vx = @as(u4, @truncate((opcode & 0x0F00) >> 8));
+                        const vy = @as(u4, @truncate((opcode & 0x00F0) >> 4));
+
+                        if (registers[vx] > registers[vy]) {
+                            registers[vx] = registers[vx] - registers[vy];
+                            registers[0xF] = 1;
+                        } else {
+                            registers[vx] = registers[vx] - registers[vy];
+                            registers[0xF] = 1;
+                        }
+                    },
+                    0x6 => {
+                        const vx = @as(u4, @truncate((opcode & 0x0F00) >> 8));
+                        const vy = @as(u4, @truncate((opcode & 0x00F0) >> 4));
+
+                        registers[vx] = registers[vy];
+
+                        registers[0xF] = (registers[vx] & 0b1);
+
+                        registers[vx] = @shrExact(registers[vx], 1);
+                    },
+                    0x7 => {
+                        const vx = @as(u4, @truncate((opcode & 0x0F00) >> 8));
+                        const vy = @as(u4, @truncate((opcode & 0x00F0) >> 4));
+
+                        if (registers[vy] > registers[vx]) {
+                            registers[vx] = registers[vy] - registers[vx];
+                            registers[0xF] = 1;
+                        } else {
+                            registers[vx] = registers[vx] - registers[vy];
+                            registers[0xF] = 1;
+                        }
+                    },
+                    0xE => {
+                        const vx = @as(u4, @truncate((opcode & 0x0F00) >> 8));
+                        const vy = @as(u4, @truncate((opcode & 0x00F0) >> 4));
+
+                        registers[vx] = registers[vy];
+
+                        registers[0xF] = (registers[vx] & 0b1);
+
+                        registers[vx] = @shlWithOverflow(registers[vx], 1)[0];
+                    },
                     else => return error.UnknownOpcode,
                 }
             },
@@ -142,7 +182,9 @@ pub const cpu = struct {
                     pc += 2;
                 }
             },
-            0xA000 => {},
+            0xA000 => {
+                index_register = (opcode & 0x0FFF);
+            },
             0xB000 => {},
             0xC000 => {},
             0xD000 => {},
