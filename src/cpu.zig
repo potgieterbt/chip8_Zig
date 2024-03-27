@@ -185,8 +185,21 @@ pub const cpu = struct {
             0xA000 => {
                 index_register = (opcode & 0x0FFF);
             },
-            0xB000 => {},
-            0xC000 => {},
+            0xB000 => {
+                pc = (opcode & 0x0FFF) + registers[0];
+            },
+            0xC000 => {
+                const vx = @as(u4, @truncate((opcode & 0x0F00) >> 8));
+                var prng = std.rand.DefaultPrng.init(blk: {
+                    var seed: u64 = undefined;
+                    try std.os.getrandom(std.mem.asBytes(&seed));
+                    break :blk seed;
+                });
+                const rand = prng.random();
+                const rn = rand.int();
+
+                registers[vx] = rn & (opcode & 0x00FF);
+            },
             0xD000 => {},
             0xE000 => {
                 switch (opcode & 0xFF) {
